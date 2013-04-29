@@ -6,12 +6,10 @@ import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.openrdf.OpenRDFException;
-import org.openrdf.model.Literal;
-import org.openrdf.model.Resource;
+import org.openrdf.model.Statement;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * Created by christian
@@ -20,46 +18,46 @@ import java.util.Map;
  */
 public class OmittedOrInvalidLanguageTagsTest {
 
-    private OmittedOrInvalidLanguageTags oiltComponents, oiltDeprecatedAndIllegal, oiltLangTags;
+    private OmittedOrInvalidLanguageTags oiltComponents, oiltLangTags;
 
     @Before
     public void setUp() throws OpenRDFException, IOException {
         oiltComponents = new OmittedOrInvalidLanguageTags();
         oiltComponents.setRepositoryConnection(new RepositoryBuilder().setUpFromTestResource("components.rdf").getConnection());
 
-        oiltDeprecatedAndIllegal = new OmittedOrInvalidLanguageTags();
-        oiltDeprecatedAndIllegal.setRepositoryConnection(new RepositoryBuilder().setUpFromTestResource("deprecatedAndIllegalTerms.rdf").getConnection());
-
         oiltLangTags = new OmittedOrInvalidLanguageTags();
         oiltLangTags.setRepositoryConnection(new RepositoryBuilder().setUpFromTestResource("languageTags.rdf").getConnection());
     }
 
     @Test
-    public void testMissingLangTagCount_1() throws OpenRDFException {
-        Map<Resource, Collection<Literal>> missingLangTags = oiltComponents.getPreparedData();
-        Assert.assertEquals(3, missingLangTags.size());
+    public void testMissingLangTagInComponents() throws OpenRDFException {
+        Collection<Statement> missingLangTags = oiltComponents.getPreparedData();
+
+        Assert.assertTrue(hasOmittedOrInvalidLangTag("conceptB", missingLangTags));
+        Assert.assertTrue(hasOmittedOrInvalidLangTag("conceptM", missingLangTags));
+
+        // concept B is reported twice: altLabel and hiddenLabel have no language tags
+        Assert.assertEquals(4, missingLangTags.size());
     }
 
     @Test
-    public void testMissingLangTagCount_2() throws OpenRDFException {
-        Map<Resource, Collection<Literal>> missingLangTags = oiltDeprecatedAndIllegal.getPreparedData();
+    public void testIso639LangTags() throws OpenRDFException {
+        Collection<Statement> missingLangTags = oiltLangTags.getPreparedData();
 
-        Assert.assertEquals(1, missingLangTags.keySet().size());
-        Assert.assertEquals(2, countEntries(missingLangTags.values()));
+        Assert.assertFalse(hasOmittedOrInvalidLangTag("conceptB", missingLangTags));
+        Assert.assertFalse(hasOmittedOrInvalidLangTag("conceptC", missingLangTags));
+        Assert.assertFalse(hasOmittedOrInvalidLangTag("conceptD", missingLangTags));
+        Assert.assertFalse(hasOmittedOrInvalidLangTag("conceptX", missingLangTags));
+        Assert.assertFalse(hasOmittedOrInvalidLangTag("conceptY", missingLangTags));
+        Assert.assertFalse(hasOmittedOrInvalidLangTag("conceptZ", missingLangTags));
+        Assert.assertFalse(hasOmittedOrInvalidLangTag("conceptV", missingLangTags));
     }
 
-    private int countEntries(Collection<Collection<Literal>> allLiterals) {
-        int literalCount = 0;
-        for (Collection<Literal> literals : allLiterals) {
-            literalCount += literals.size();
+    private boolean hasOmittedOrInvalidLangTag(String uriSuffix, Collection<Statement> missingLangTags) {
+        for (Statement statement : missingLangTags) {
+            if (statement.getSubject().stringValue().endsWith(uriSuffix)) return true;
         }
-        return literalCount;
-    }
-
-    @Test
-    public void testMissingLangTagCount_3() throws OpenRDFException {
-        Map<Resource, Collection<Literal>> missingLangTags = oiltLangTags.getPreparedData();
-        Assert.assertEquals(1, countEntries(missingLangTags.values()));
+        return false;
     }
 
 }

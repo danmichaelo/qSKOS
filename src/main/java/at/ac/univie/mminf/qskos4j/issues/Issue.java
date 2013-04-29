@@ -92,4 +92,5 @@ public abstract class Issue<T> {
             ", type=" + type +
             '}';
     }
+
 }
