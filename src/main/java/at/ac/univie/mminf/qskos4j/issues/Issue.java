@@ -47,7 +47,7 @@ public abstract class Issue<T> {
         return prepareReport(getPreparedData());
     }
 
-    protected final void reset() {
+    public final void reset() {
         preparedData = null;
         if (progressMonitor != null) {
             progressMonitor.reset();
